@@ -1,0 +1,31 @@
+doctype html
+html
+	//what about lang and charset?
+	head
+		link(rel='stylesheet', href='/style/styling.css')
+		title The Prosefectionist - Edit Post
+		//what about meta tags?
+
+
+	body
+		#wrapper
+			#containerinner
+				#header
+					header
+						img(src='/images/logo.png', width='100', height='122', alt='The Prosefectionist Logo')#logoimage
+						<br><a href="/"><span class="initialinner">T</span><span class="titleitinner">he</span> <span class="initialinner">P</span><span class="titlecapsinner">ROSE</span><span class="titleitinner">fectionist</span></a>
+
+				#content
+
+					h2 Edit Comment
+					form(action='/editcomment/#{postid}/#{commentid}', method='post')
+						label Name
+						input(type='text', name='name', value='#{name}')
+						<br><br>
+						label Email
+						input(type='text', name='email', value ='#{email}')
+						<br><br>
+						label Comment
+						textarea(rows='10', cols='52', name='comment') #{comment}
+						<br><br>
+						input(type='submit', name='Save', value='Submit')

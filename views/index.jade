@@ -1,0 +1,37 @@
+doctype html
+html
+	//what about lang and charset?
+	head
+		link(rel='stylesheet', href='/style/styling.css')
+		title The Prosefectionist, by Brendan Ritchie
+		//what about meta tags?
+
+
+	body
+		#menu
+			//a(href="/newpost") New Post
+			if admin
+				a(href="/logout") Log Out
+			else
+				a(href="/login") Log In
+		#wrapper
+			#container
+				#header
+					header
+						img(src='/images/logo.png', width='200', height='244', alt='The Prosefectionist Logo')#logoimage
+						<br><a href="/"><span class="initial">T</span><span class="titleit">he</span> <span class="initial">P</span><span class="titlecaps">ROSE</span><span class="titleit">fectionist</span></a>
+
+						p#tag Brendan Ritchie. Sometime Harvard philosophy student, future captain of industry. <a href="/about">Learn more</a>.
+
+				#content
+	
+					for post in posts
+						a(href="/post/#{post._id}"): h2= post.title
+						p!= post.body
+
+					//should check number of posts in posts
+					if numposts > 5
+						#pagenav: a(href="/page/2") Next Page
+
+					//<br><br> 
+					//p: a(href='/newpost') New Post

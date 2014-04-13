@@ -1,0 +1,17 @@
+{
+	"name": "prosefectionist",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"start": "node app"
+	},
+	"dependencies": {
+		"express": "3.*",
+		"jade": "*",
+		"mongodb": "*",
+		"monk": "*",
+		"iniparser": "*",
+		"coffee-script": "*",
+		"connect-mongo": "*"
+	}
+}
