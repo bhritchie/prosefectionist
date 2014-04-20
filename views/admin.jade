@@ -3,7 +3,7 @@ html
 	//what about lang and charset?
 	head
 		link(rel='stylesheet', href='/style/styling.css')
-		title The Prosefectionist - About
+		title The Prosefectionist - Log in
 		//what about meta tags?
 
 
@@ -16,8 +16,10 @@ html
 						<br><a href="/"><span class="initialinner">T</span><span class="titleitinner">he</span> <span class="initialinner">P</span><span class="titlecapsinner">ROSE</span><span class="titleitinner">fectionist</span></a>
 
 				#content
-	
-					h2= pagetitle
-					
-					p!= pagecontent
 
+					h2 Administration Functions
+
+					ul#adminposttools
+						li: a(href='/newpost') Create new post
+						li: a(href='/newpage') Create new page
+						li: a(href='/logout') Log out

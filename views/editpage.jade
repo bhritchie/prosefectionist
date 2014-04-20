@@ -1,0 +1,34 @@
+doctype html
+html
+	//what about lang and charset?
+	head
+		link(rel='stylesheet', href='/style/styling.css')
+		title The Prosefectionist - Edit Page
+		//what about meta tags?
+
+
+	body
+		#wrapper
+			#containerinner
+				#header
+					header
+						img(src='/images/logo.png', width='100', height='122', alt='The Prosefectionist Logo')#logoimage
+						<br><a href="/"><span class="initialinner">T</span><span class="titleitinner">he</span> <span class="initialinner">P</span><span class="titlecapsinner">ROSE</span><span class="titleitinner">fectionist</span></a>
+
+				#content
+
+					h2 Edit Page
+					form(action='/editpage/#{pageid}', method='post')
+						label Short Name
+						input(type='text', name='pagetitleshort', value='#{pagetitleshort}')
+						<br><br>
+						label Long Name
+						input(type='text', name='pagetitlelong', value='#{pagetitlelong}')
+						<br><br>
+						label Sequence
+						input(type='text', name='pagesequence', value='#{pagesequence}')
+						<br><br>
+						label Body
+						textarea(rows='10', cols='52', name='pagebody') #{pagebody}
+						<br><br>
+						input(type='submit', name='Save', value='Submit')
