@@ -1,48 +1,44 @@
 #Brendan Ritchie, April 2014
-#www.prosefectionist.com
+#https://github.com/bhritchie/prosefectionist
 
-#rough installation instructions:
-#install node dependencies: "sudo npm install"
-#Set admin username and password in config.ini, and port (default 3000)
-#Have MongoDB running with a database called "blog"
-#Run app: "node app.js"
-#Find app running at [host]:[port]
-#The files have a lot of site-specific info right now - for example there is currently a lot of repitition in the layout files, which all have my (Brendan's) own personal tagline
-
-
-#for Prod:
-#port should be 80
-#turn off pretty printing of html
+#When in prodMode, use db connection string from config.ini
+prodMode = true
 
 iniparser = require 'iniparser'
 config = iniparser.parseSync './config.ini'
 
-#TEST THE CONFIG.INI LOADING
+#Site name and tag are loaded from config.ini
+sitetitle = config.sitetitle
+sitename = config.sitename
+sitetag = config.sitetag
 
-#Admin username and password in congif.ini
+
+#Admin username and password are loaded from congif.ini
 username = config.username
 password = config.password
 
-console.log username
-console.log password
+#Database connection parameter is loaded from config.ini
+dbconnection = config.dbconnection
 
-#does express import this anyway?
+#Load port from config.ini - for Prod use 80
+port = config.port
+
 http = require 'http'
-
 express = require 'express'
 app = express()
+
+#Turn off pretty printing for prod
+app.locals.pretty = true
 
 mongo = require 'mongodb'
 monk = require 'monk'
 #async = require 'node-async'
 mongoStore = require('connect-mongo')(express) 
-db = monk 'localhost:27017/blog'
+
 
 app.use express.static './public/'
 app.set 'view engine', 'jade'
 app.set 'views', './views'
-
-app.locals.pretty = true	#only for dev
 
 app.use express.logger {format:':remote-addr :method :url'}
 
@@ -50,13 +46,26 @@ app.use express.bodyParser()
 
 app.use express.cookieParser 'baggins'
 
-app.use express.session {
-	store: new mongoStore {
-		db: 'blog',
-		host: '127.0.0.1',
-		port: 27017
+
+#In prodMode use db connection from config.ini
+if prodMode
+	db = monk dbconnection
+	app.use express.session {
+		store: new mongoStore {
+			url: dbconnection
+			}
 		}
-	}
+#else use local mongo server
+else
+	db = monk 'localhost:27017/blog'
+	app.use express.session {
+		store: new mongoStore {
+			db: 'blog',
+			host: '127.0.0.1',
+			port: 27017
+			}
+		}
+
 
 app.use app.router
 
@@ -85,21 +94,42 @@ app.use (req, res) ->
 		message: 'The Prosefectionist can write, but he can\'t find your page.'
 		}
 
-#LOGIN
+
+#BEGIN LOGIN AND ADMIN ROUTES
 app.get '/login/?', (req, res) ->
-	res.render 'login'
+	if req.session.admin
+		res.redirect 303, '/admin'
+	else
+		#provide system message with redirection
+		res.render 'login'
 
+#maybe test errors by shutting off mongo server?
+#Make this return to the post page for the new post - how can I insert and get id?
+app.post '/login', (req, res) ->
 
-#LOGIN
-app.get '/ajaxtest/?', (req, res) ->
-	res.send 'Hello from Ajax'
+	if req.body.username is username and req.body.password is password
+		req.session.admin = true
+		#want a system message here with redirect to home
+		res.redirect 303, '/admin'
+	else
+		#want a system message here and redirect to home
+		res.redirect 303, '/'
+
+app.get '/logout', (req, res) ->
+	req.session.destroy()
+	res.redirect 303, '/'
+
+app.get '/admin/?', (req, res) ->
+	if req.session.admin
+		res.render 'admin'
+	else
+		#provide system message with redirection
+		res.redirect 303, '/login'
+
+#END LOGIN AND ADMIN ROUTES
 
 
 app.post '/inpagecomment/:id', (req, res) ->
-
-	console.log 'hello there'
-	console.log req.body.admin
-	console.log req.body.name
 
 	newcomment = {}
 
@@ -107,7 +137,7 @@ app.post '/inpagecomment/:id', (req, res) ->
 	newcomment.date = new Date()
 	newcomment.comment = req.body.comment
 
-	if req.body.admin is true
+	if req.body.admin is 'true'
 		newcomment.admin = true
 		newcomment.name = username
 		#newcomment.email = useremail #HAVE TO DEFINE THIS ABOVE	
@@ -121,10 +151,8 @@ app.post '/inpagecomment/:id', (req, res) ->
 	#test the error by shutting off the database
 	comments.insert newcomment, (err, doc) ->
 			res.send 'Error saving comment.' if err
-			console.log doc
-			doc.time = doc.date.getUTCHours() + ':' + doc.date.getUTCMinutes()
+			doc.time = doc.date.getHours() + ':' + doc.date.getMinutes()
 			doc.day = doc.date.toLocaleDateString()
-			console.log doc
 			res.send doc		
 	#res.send 'Comment saved.'
 	#send system message with redirect
@@ -133,39 +161,126 @@ app.post '/inpagecomment/:id', (req, res) ->
 
 
 
+#ABOUT
+#app.get '/about/?', (req, res) ->
+#	res.render 'about'
+
+
+#NEW PAGES
+#fix the textarea stuff - why does it work differently than other inputs, or are they all suposed to be like textarea?
+app.get '/newpage/?', (req, res) ->
+	if req.session.admin
+		res.render 'newpage' 
+	else
+		#provide system message with redirection
+		res.redirect 303, '/'		
+
+
 #maybe test errors by shutting off mongo server?
 #Make this return to the post page for the new post - how can I insert and get id?
-app.post '/login', (req, res) ->
-
-	if req.body.username is username and req.body.password is password
-		req.session.admin = true
-		#want a system message here with redirect to home
+app.post '/newpage', (req, res) ->
+	if req.session.admin
+		sitepages = db.get 'pages'
+		sitepages.insert {
+			'shortname': req.body.pagetitleshort,
+			'longname': req.body.pagetitlelong,
+			'sequence': req.body.pagesequence,
+			'body': req.body.pagebody,
+			'date': new Date()
+			}, (err, doc) ->
+				res.send 'Error adding page.' if err
 		res.redirect 303, '/'
 	else
-		#want a system message here and redirect to home
+		#send system message with redirect
 		res.redirect 303, '/'
 
+app.get '/editpage/:id', (req, res) ->
+	if req.session.admin
+		sitepages = db.get 'pages'
+		sitepages.find {_id: req.params.id}, (e,docs) ->
+			res.render 'editpage', {
+				pagetitleshort: docs[0].shortname,
+				pagetitlelong: docs[0].longname,
+				pagesequence: docs[0].sequence,
+				pagebody: docs[0].body,
+				pageid: docs[0]._id
+			}
+	else
+		#send system message with redirect
+		res.redirect 303, '/'
 
-app.get '/logout', (req, res) ->
-	req.session.destroy()
-	res.redirect 303, '/'
+app.post '/editpage/:id', (req, res) ->
+	if req.session.admin
+		sitepages = db.get 'pages'
+		sitepages.update {_id: req.params.id}, {$set: {
+			'shortname': req.body.pagetitleshort,
+			'longname': req.body.pagetitlelong,
+			'body': req.body.pagebody
+			}}, (err, doc) ->
+				res.send 'Error editing page.' if err
+		#res.send 'Post edited.'
 
+		#why am i sorting and getting limit here?
+		#redirect this to the real pages link - for some reason no longer has admin links eg
+		sitepages.find {_id: req.params.id}, {limit:5, sort: {date: -1}}, (e,docs) ->
+			res.render 'pages', {
+					pagetitleshort: docs[0].shortname,
+					pagetitlelong: docs[0].longname,
+					pagesequence: docs[0].sequence,
+					pagebody: docs[0].body,
+					pageid: docs[0]._id
+			}
+	else
+		#send system message with redirect
+		res.redirect 303, '/'
 
-#ABOUT
-app.get '/about/?', (req, res) ->
-	res.render 'about'
+app.get '/deletepage/:id', (req, res) ->
+	if req.session.admin
+		sitepages = db.get 'pages'
+		sitepages.remove {_id: req.params.id}, (err, doc) ->
+				res.send 'Error deleting page.' if err
+		#could this be faster if I do the redirect first and then send the delet requests? but they shouldn't block anyway I think...
+		#send system message with redirect
+		res.redirect 303, '/'
+	else
+		#send system message with redirect
+		res.redirect 303, '/'
+
+#INDIVIDUAL PAGE
+app.get '/pages/:id', (req, res) ->
+
+	sitepages = db.get 'pages'
+	#remove limit and sort throughout section
+	sitepages.find {_id: req.params.id}, {limit:5, sort: {date: -1}}, (e,docs) ->
+		page = docs
+		res.render 'pages', {
+				pagetitlelong: page[0].longname,
+				pagebody: page[0].body,
+				pageid: page[0]._id,
+				pagedate: page[0].date.toLocaleDateString(),
+				admin: req.session.admin
+		}
 
 
 #INDEX
 app.get '/', (req, res) ->
 
-	results = null
+	pageresults = null
+	postresults = null
 	totalposts = null
-	blogposts = db.get 'posts'
 
+	sitepages = db.get 'pages'
+
+	sitepages.find {}, {sort: {sequence: 1}}, (e,docs) ->
+		#ONLY FETCH THE SHORT NAME, ID, AND SEQUENCE!
+		#Can't figure out how to drop this so might need to strip the pageresults a bit before passing to jade...
+		pageresults = docs
+		#console.log pageresults
+		complete()
+
+	blogposts = db.get 'posts'
 	blogposts.find {}, {limit: pageskip, sort: {date: -1}}, (e,docs) ->
-		results = docs
-		#console.log docs
+		postresults = docs
 		complete()
 
 	blogposts.count {}, (e,count) ->
@@ -173,9 +288,13 @@ app.get '/', (req, res) ->
 		complete()
 
 	complete = () ->
-		if results isnt null and totalposts isnt null
+		if pageresults isnt null and postresults isnt null and totalposts isnt null
 			res.render 'index', {
-				posts: results,
+				sitetitle: sitetitle,
+				sitename: sitename,
+				sitetag: sitetag,
+				pages: pageresults,
+				posts: postresults,
 				title:config.title,
 				numposts: totalposts,
 				admin: req.session.admin
@@ -186,7 +305,6 @@ app.get '/page/1/?', (req, res) ->
 
 #NEW POSTS
 #fix the textarea stuff - why does it work differently than other inputs, or are they all suposed to be like textarea?
-#audd 'auth as second parameter to use basic auth
 app.get '/newpost/?', (req, res) ->
 	if req.session.admin
 		res.render 'newpost' 
@@ -206,7 +324,7 @@ app.post '/newpost', (req, res) ->
 			'date': new Date()
 			}, (err, doc) ->
 				res.send 'Error adding post.' if err
-		res.send 'Post created.'
+		res.redirect 303, '/'
 	else
 		#send system message with redirect
 		res.redirect 303, '/'
@@ -321,7 +439,7 @@ app.get '/editcomment/:post/:comment', (req, res) ->
 			res.render 'editcomment', {
 				name: docs[0].name,
 				email: docs[0].email,
-				comment: docs[0].comment,
+				dcomment: docs[0].comment,
 				commentid: docs[0]._id,
 				postid: req.params.post
 			}
@@ -353,7 +471,18 @@ app.get '/post/:id', (req, res) ->
 
 	post = null
 	comments = null
+	#pageresults = null
 	#commentid = null
+
+	sitepages = db.get 'pages'
+
+	#sitepages.find {}, {sort: {sequence: 1}}, (e,docs) ->
+		#ONLY FETCH THE SHORT NAME, ID, AND SEQUENCE!
+		#Can't figure out how to drop this so might need to strip the pageresults a bit before passing to jade...
+		#pageresults = docs
+		#console.log pageresults
+		#complete()
+
 
 	blogposts = db.get 'posts'
 	#remove limit and sort throughout section
@@ -372,6 +501,7 @@ app.get '/post/:id', (req, res) ->
 			if isEmptyObject(comments)
 				comments = false
 			res.render 'post', {
+					#pages: pageresults,
 					posttitle: post[0].title,
 					postbody: post[0].body,
 					postid: post[0]._id,
@@ -435,5 +565,5 @@ isEmptyObject = (obj) ->
 
 
 
-http.createServer(app).listen config.port, ->
-	console.log "Express app started on #{config.port}"
+http.createServer(app).listen port, ->
+	console.log "Express app started on port #{port}"
