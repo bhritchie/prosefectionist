@@ -2,7 +2,7 @@
 #https://github.com/bhritchie/prosefectionist
 
 #When in prodMode, use db connection string from config.ini
-prodMode = true
+prodMode = false
 
 iniparser = require 'iniparser'
 config = iniparser.parseSync './config.ini'
@@ -12,6 +12,9 @@ sitetitle = config.sitetitle
 sitename = config.sitename
 sitetag = config.sitetag
 
+
+#LOAD FROM INI.CONFIG
+latestwhitelist = "prosefectionist.com"
 
 #Admin username and password are loaded from congif.ini
 username = config.username
@@ -95,6 +98,55 @@ app.use (req, res) ->
 		}
 
 
+#Get latest post titles in JSON
+app.get '/latest', (req, res) ->
+	res.header "Access-Control-Allow-Origin", latestwhitelist
+	res.header "Access-Control-Request-Method", "GET"
+	blogposts = db.get 'posts'
+	blogposts.find {}, {limit: 5, sort: {date: -1}}, (e,docs) ->
+		res.send docs
+
+
+#Get latest post titles in JSON
+app.get '/latest', (req, res) ->
+	res.header "Access-Control-Allow-Origin", latestwhitelist
+	res.header "Access-Control-Request-Method", "GET"
+	blogposts = db.get 'posts'
+	blogposts.find {}, {limit: 5, sort: {date: -1}}, (e,docs) ->
+		res.send docs
+
+
+#Allow admin to download all posts for archival purposes
+app.get '/archive', (req, res) ->
+
+
+#NEED TO COMBINE THE RESULTS FOR A SINGLE RESPONSE
+
+	if req.session.admin
+		pageresults = null
+		postresults = null
+
+		sitepages = db.get 'pages'
+
+		sitepages.find {}, {sort: {sequence: 1}}, (e,docs) ->
+			pageresults = docs
+			complete()
+
+		blogposts = db.get 'posts'
+		blogposts.find {}, {sort: {date: -1}}, (e,docs) ->
+			postresults = docs
+			complete()
+
+		complete = () ->
+			if pageresults isnt null and postresults isnt null
+				res.send results
+
+	else
+		#provide system message with redirection
+		res.redirect 303, '/'
+
+
+
 #BEGIN LOGIN AND ADMIN ROUTES
 app.get '/login/?', (req, res) ->
 	if req.session.admin
@@ -173,7 +225,7 @@ app.get '/newpage/?', (req, res) ->
 		res.render 'newpage' 
 	else
 		#provide system message with redirection
-		res.redirect 303, '/'		
+		res.redirect 303, '/'	
 
 
 #maybe test errors by shutting off mongo server?
@@ -439,7 +491,7 @@ app.get '/editcomment/:post/:comment', (req, res) ->
 			res.render 'editcomment', {
 				name: docs[0].name,
 				email: docs[0].email,
-				dcomment: docs[0].comment,
+				comment: docs[0].comment,
 				commentid: docs[0]._id,
 				postid: req.params.post
 			}

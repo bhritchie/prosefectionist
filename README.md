@@ -1,9 +1,10 @@
 Prosefectionist
 ===============
 
-Prosefectionist (read: prose-fectionist) is a clean blogging platform written mostly in CoffeeScript and powered by Node.js and MongoDB. Its purpose is to provide myself a blogging platform that also develops my web skills. It is very much a work in progress. Note that it is very much a work in progress.
+Prosefectionist (read: prose-fectionist) is a clean blogging platform written mostly in CoffeeScript and powered by Node.js and MongoDB. Its purpose is to provide myself a blogging platform that also develops my web skills. It is very much a work in progress. 
 
-A demo site (my personal blog) is up at [prosefectionist.jit.su](http://prosefectionist.jit.su/).
+*June 6th, 2014: Prosefectionist has been superceded by (ng-Prosefectionist)[https://github.com/bhritchie/ng-prosefectionist].*
+
 
 Installation & Configuration
 ----------------------------
@@ -25,7 +26,7 @@ dbconnection=[a mongoURI, e.g. mongodb://[id]:[password]@[host]:[port]/[database
 Administration
 --------------
 
-- Access /admin to log in with username and password defined in config.ini. This allows the user to create, edit, and delete posts and pages, to edit and delete user comments, and to comment as the administrator (admin comments display differently).
+Access /admin to log in with username and password defined in config.ini. This allows the user to create, edit, and delete posts and pages, to edit and delete user comments, and to comment as the administrator (admin comments display differently).
 
 Once logged in, "Administration" "Log Out" links will be available on the top right corner of the index page.
 
