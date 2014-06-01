@@ -1,10 +1,9 @@
 Prosefectionist
 ===============
 
+*June 6th, 2014: Prosefectionist has been superceded by [ng-Prosefectionist](https://github.com/bhritchie/ng-prosefectionist).*
+
 Prosefectionist (read: prose-fectionist) is a clean blogging platform written mostly in CoffeeScript and powered by Node.js and MongoDB. Its purpose is to provide myself a blogging platform that also develops my web skills. It is very much a work in progress. 
-
-*June 6th, 2014: Prosefectionist has been superceded by (ng-Prosefectionist)[https://github.com/bhritchie/ng-prosefectionist].*
-
 
 Installation & Configuration
 ----------------------------
